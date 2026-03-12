@@ -1,4 +1,5 @@
 import random
+
 # pick a random number for the user to guess
 rand = random.randint(1, 100)
 
@@ -12,6 +13,6 @@ while guess != rand:  # if the guess is not equal to the random number, you have
         print('Too high. Guess again.')
 
     print('Enter a new guess: ')
-    guess = input()
+    guess = int(input())
 
 print('You got it! The number was {}'.format(rand))
