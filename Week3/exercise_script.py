@@ -9,11 +9,35 @@ import matplotlib.patches as mpatches
 # ---------------------------------------------------------------------------------------------------------------------
 # in this section, write the script to load the data and complete the main part of the analysis.
 # try to print the results to the screen using the format method demonstrated in the workbook
+import os
 
 # load the necessary data here and transform to a UTM projection
-
+counties = gpd.read_file(os.path.abspath('data_files/Counties.shp'))
+wards = gpd.read_file(os.path.abspath('data_files/NI_Wards.shp'))
 # your analysis goes here...
 
+# ensure data has the same CRS
+counties = counties.to_crs(epsg=2157)
+wards = wards.to_crs(epsg=2157)
+
+#spatial join
+join = gpd.sjoin(counties, wards, how='inner', lsuffix='left', rsuffix='right')
+print(join.head())
+
+#group by county
+group_county = join.groupby('CountyName')
+
+#calculate population
+#print(group_county['Population'].sum())
+
+#find wards that appear in more than one county
+ward_count = join.groupby('Ward').agg({
+    'CountyName': 'nunique',
+    'Population': 'sum'})
+
+#population of wards that appear in more than one county
+multi_county = ward_count[ward_count>1]
+print(multi_county['Population'].sum())
 # ---------------------------------------------------------------------------------------------------------------------
 # below here, you may need to modify the script somewhat to create your map.
 # create a crs using ccrs.UTM() that corresponds to our CRS
@@ -40,6 +64,12 @@ ward_plot = wards.plot(column='Population', ax=ax, vmin=1000, vmax=8000, cmap='v
 # add county outlines in red using ShapelyFeature
 county_outlines = ShapelyFeature(counties['geometry'], ni_utm, edgecolor='r', facecolor='none')
 ax.add_feature(county_outlines)
+def generate_handles(labels, colors, edge='k', alpha=1):
+    lc = len(colors)
+    handles = []
+    for ii in range(len(labels)):
+        handles.append(mpatches.Rectangle((0,0),1,1, facecolor = colors[ii % lc], edgecolor=edge, alpha=alpha))
+    return handles
 
 county_handles = generate_handles([''], ['none'], edge='r')
 
@@ -47,4 +77,4 @@ county_handles = generate_handles([''], ['none'], edge='r')
 ax.legend(county_handles, ['County Boundaries'], fontsize=12, loc='upper left', framealpha=1)
 
 # save the figure
-fig.savefig('sample_map.png', dpi=300, bbox_inches='tight')
+fig.savefig('sample_map2.png', dpi=300, bbox_inches='tight')
